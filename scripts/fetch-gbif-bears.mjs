@@ -3,12 +3,12 @@
  *  - public/data/gbif/bear_observations.csv
  *  - public/data/gbif/bear_observations.geojson
  *
- * Uses the GBIF Occurrence Search API with paging (limit/offset).
+ * Uses GBIF Occurrence Search API with paging (limit/offset).
  *
  * Optional env vars:
- *   GBIF_BBOX="minLon,minLat,maxLon,maxLat"  (optional)
- *   GBIF_LIMIT=300                          (optional; per-request limit)
- *   GBIF_MAX=5000                           (optional; total records per species)
+ *   GBIF_BBOX="minLon,minLat,maxLon,maxLat"   (optional)
+ *   GBIF_LIMIT=300                           (optional; per-request limit)
+ *   GBIF_MAX=3000                            (optional; total records per species; keep small for Vercel)
  */
 
 import fs from "node:fs";
@@ -20,15 +20,10 @@ const CSV_PATH = path.join(OUT_DIR, "bear_observations.csv");
 const GEOJSON_PATH = path.join(OUT_DIR, "bear_observations.geojson");
 
 const LIMIT = Number(process.env.GBIF_LIMIT || 300);
+const MAX = Number(process.env.GBIF_MAX || 3000); // ✅ safer default for Vercel
+const BBOX = process.env.GBIF_BBOX?.trim() || "";
 
-// IMPORTANT: Keep this modest for Vercel builds.
-// You can raise later when you're not running it during build.
-const MAX = Number(process.env.GBIF_MAX || 5000);
-
-// Optional bounding box: "minLon,minLat,maxLon,maxLat"
-const BBOX = process.env.GBIF_BBOX?.trim();
-
-// Bears (keep all 3, still USA-only)
+// USA-only bears
 const SPECIES = [
   { label: "American black bear", scientificName: "Ursus americanus" },
   { label: "Brown bear", scientificName: "Ursus arctos" },
@@ -41,15 +36,19 @@ function ensureDir(p) {
 
 function csvEscape(v) {
   const s = String(v ?? "");
-  if (/[,"\n]/.test(s)) return `"${s.replaceAll('"', '""')}"`;
-  return s;
+  return /[,"\n]/.test(s) ? `"${s.replaceAll('"', '""')}"` : s;
 }
 
-function sleep(ms) {
-  return new Promise((r) => setTimeout(r, ms));
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+function bboxToWkt(bboxStr) {
+  if (!bboxStr) return "";
+  const [minLon, minLat, maxLon, maxLat] = bboxStr.split(",").map(Number);
+  if (![minLon, minLat, maxLon, maxLat].every(Number.isFinite)) return "";
+  return `POLYGON((${minLon} ${minLat},${maxLon} ${minLat},${maxLon} ${maxLat},${minLon} ${maxLat},${minLon} ${minLat}))`;
 }
 
-async function fetchWithRetry(url, tries = 3) {
+async function fetchJsonWithRetry(url, tries = 3) {
   let lastErr;
   for (let i = 0; i < tries; i++) {
     try {
@@ -61,14 +60,13 @@ async function fetchWithRetry(url, tries = 3) {
       return res.json();
     } catch (e) {
       lastErr = e;
-      // small backoff
-      await sleep(400 * (i + 1));
+      await sleep(500 * (i + 1));
     }
   }
   throw lastErr;
 }
 
-function toGeoJSONFeature(r) {
+function toFeature(r) {
   const lon = r.decimalLongitude;
   const lat = r.decimalLatitude;
   if (typeof lon !== "number" || typeof lat !== "number") return null;
@@ -99,20 +97,14 @@ function toGeoJSONFeature(r) {
   };
 }
 
-function buildWktPolygonFromBbox(bboxStr) {
-  const [minLon, minLat, maxLon, maxLat] = bboxStr.split(",").map(Number);
-  if (![minLon, minLat, maxLon, maxLat].every(Number.isFinite)) return null;
-  return `POLYGON((${minLon} ${minLat},${maxLon} ${minLat},${maxLon} ${maxLat},${minLon} ${maxLat},${minLon} ${minLat}))`;
-}
-
 async function fetchSpecies(scientificName) {
   let offset = 0;
-  let all = [];
+  let rows = [];
+  const wkt = bboxToWkt(BBOX);
 
-  const wkt = BBOX ? buildWktPolygonFromBbox(BBOX) : null;
-
-  while (all.length < MAX) {
+  while (rows.length < MAX) {
     const url = new URL("https://api.gbif.org/v1/occurrence/search");
+
     const params = {
       scientificName,
       limit: LIMIT,
@@ -124,26 +116,27 @@ async function fetchSpecies(scientificName) {
       geometry: wkt || undefined,
     };
 
-    Object.entries(params).forEach(([k, v]) => {
-      if (v === undefined || v === null || v === "") return;
+    for (const [k, v] of Object.entries(params)) {
+      if (v === undefined || v === null || v === "") continue;
       url.searchParams.set(k, String(v));
-    });
+    }
 
-    const json = await fetchWithRetry(url, 3);
+    const json = await fetchJsonWithRetry(url, 3);
     const results = json.results ?? [];
+    rows.push(...results);
 
-    all.push(...results);
-
-    if (results.length < LIMIT) break; // no more pages
+    if (results.length < LIMIT) break;
     offset += LIMIT;
   }
 
-  if (all.length > MAX) all = all.slice(0, MAX);
-  return all;
+  return rows.length > MAX ? rows.slice(0, MAX) : rows;
 }
 
 async function main() {
   ensureDir(OUT_DIR);
+
+  // ✅ Version stamp so you can confirm Vercel is using the newest commit
+  console.log("GBIF SCRIPT VERSION: USA-only + MAX-3000 (Jan 17 2026)");
 
   console.log(`GBIF fetch starting… LIMIT=${LIMIT} MAX=${MAX} BBOX=${BBOX || "none"} country=US`);
 
@@ -165,7 +158,7 @@ async function main() {
     return true;
   });
 
-  // Write CSV
+  // CSV
   const headers = [
     "gbifID",
     "scientificName",
@@ -188,20 +181,20 @@ async function main() {
     "license",
   ];
 
-  const csvLines = [
+  const csv = [
     headers.join(","),
     ...rows.map((r) => headers.map((h) => csvEscape(r[h])).join(",")),
-  ];
-  fs.writeFileSync(CSV_PATH, csvLines.join("\n"), "utf8");
+  ].join("\n");
 
-  // Write GeoJSON
-  const features = rows.map(toGeoJSONFeature).filter(Boolean);
-  const geojson = {
-    type: "FeatureCollection",
-    name: "gbif_bear_observations_us",
-    features,
-  };
-  fs.writeFileSync(GEOJSON_PATH, JSON.stringify(geojson), "utf8");
+  fs.writeFileSync(CSV_PATH, csv, "utf8");
+
+  // GeoJSON
+  const features = rows.map(toFeature).filter(Boolean);
+  fs.writeFileSync(
+    GEOJSON_PATH,
+    JSON.stringify({ type: "FeatureCollection", name: "gbif_bear_observations_us", features }),
+    "utf8"
+  );
 
   console.log(`✅ Wrote ${CSV_PATH} (${rows.length} rows)`);
   console.log(`✅ Wrote ${GEOJSON_PATH} (${features.length} points)`);
