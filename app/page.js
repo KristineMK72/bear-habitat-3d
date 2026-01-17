@@ -14,7 +14,7 @@ export default function Home() {
           <div className="brand">
             <div className="title">URSUS</div>
             <div className="subtitle">
-              A Living Bear Habitat · 3D terrain + real USA observations
+              A Living Bear Habitat · 3D map + real USA observations
             </div>
           </div>
 
@@ -34,9 +34,7 @@ export default function Home() {
         <div style={{ height: 14 }} />
 
         <div className="muted" style={{ fontSize: 13, lineHeight: 1.5 }}>
-          Tip: zoom in to see clusters. Hover a point for details.
-          <span style={{ display: "inline-block", width: 10 }} />
-          Data source: GBIF Occurrence API.
+          Tip: zoom in to see clusters. On desktop, hover a point for details.
         </div>
       </div>
     </main>
