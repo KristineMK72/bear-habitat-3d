@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "gbif:bears": "node scripts/fetch-gbif-bears.mjs"
   },
   "dependencies": {
     "maplibre-gl": "^5.16.0",
