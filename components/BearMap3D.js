@@ -1,25 +1,45 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 export default function BearMap3D() {
   const mapRef = useRef(null);
   const containerRef = useRef(null);
-  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     if (!containerRef.current) return;
     if (mapRef.current) return;
 
-    // Keep the same overall "look" as your original: angled, dramatic, big terrain view.
+    // Satellite raster style (no key)
+    const SATELLITE_STYLE = {
+      version: 8,
+      sources: {
+        esri: {
+          type: "raster",
+          tiles: [
+            "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+          ],
+          tileSize: 256,
+          attribution: "Tiles © Esri",
+        },
+      },
+      layers: [
+        {
+          id: "esri-satellite",
+          type: "raster",
+          source: "esri",
+        },
+      ],
+    };
+
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: "https://demotiles.maplibre.org/style.json",
-      center: [-104, 42], // nice western-US angle similar to your screenshot
+      style: SATELLITE_STYLE,
+      center: [-104, 42],
       zoom: 3.2,
-      pitch: 55,
+      pitch: 60,
       bearing: -18,
       antialias: true,
     });
@@ -27,55 +47,69 @@ export default function BearMap3D() {
     mapRef.current = map;
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
 
-    // Log errors (useful, but won't break the UI)
     map.on("error", (e) => {
       const msg = e?.error?.message || e?.error;
       if (msg) console.log("[MapLibre]", msg);
     });
 
     map.on("load", async () => {
-      setReady(true);
-
-      // ===== Habitat overlay (optional; uses /public/habitat.geojson if present) =====
+      // --- Terrain (DEM) using Terrarium tiles ---
+      // Replaces the broken demotiles.maplibre.org/terrain-tiles/...
       try {
-        map.addSource("habitat", {
-          type: "geojson",
-          data: "/habitat.geojson",
+        map.addSource("terrain", {
+          type: "raster-dem",
+          tiles: [
+            "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+          ],
+          tileSize: 256,
+          maxzoom: 12,
+          encoding: "terrarium", // key difference vs Mapbox RGB encoding
         });
+
+        map.setTerrain({ source: "terrain", exaggeration: 1.35 });
+
+        // Optional atmospheric sky (makes 3D feel nicer)
+        map.addLayer({
+          id: "sky",
+          type: "sky",
+          paint: {
+            "sky-type": "atmosphere",
+            "sky-atmosphere-sun": [0.0, 0.0],
+            "sky-atmosphere-sun-intensity": 10,
+          },
+        });
+      } catch (err) {
+        console.log("[Terrain] skipped/failed:", err?.message || err);
+      }
+
+      // --- Habitat overlay (optional) ---
+      try {
+        map.addSource("habitat", { type: "geojson", data: "/habitat.geojson" });
 
         map.addLayer({
           id: "habitat-fill",
           type: "fill",
           source: "habitat",
-          paint: {
-            "fill-color": "#22c55e",
-            "fill-opacity": 0.12,
-          },
+          paint: { "fill-color": "#facc15", "fill-opacity": 0.18 },
         });
 
         map.addLayer({
           id: "habitat-outline",
           type: "line",
           source: "habitat",
-          paint: {
-            "line-color": "#86efac",
-            "line-width": 1.5,
-            "line-opacity": 0.9,
-          },
+          paint: { "line-color": "#fde047", "line-width": 1.5, "line-opacity": 0.9 },
         });
       } catch (err) {
-        // If habitat.geojson doesn't exist, that's fine.
         console.log("[Habitat] skipped:", err?.message || err);
       }
 
-      // ===== GBIF bears =====
+      // --- GBIF bears overlay ---
       try {
         map.addSource("gbif-bears", {
           type: "geojson",
           data: "/data/gbif/bear_observations.geojson",
         });
 
-        // SUPER visible circles so you know it's working
         map.addLayer({
           id: "gbif-bears-circles",
           type: "circle",
@@ -89,7 +123,7 @@ export default function BearMap3D() {
           },
         });
 
-        // Auto zoom to bears so you can’t miss them
+        // Auto-fit to points so you immediately see them
         const gj = await fetch("/data/gbif/bear_observations.geojson").then((r) => r.json());
         const coords = (gj.features || [])
           .map((f) => f?.geometry?.coordinates)
@@ -108,7 +142,7 @@ export default function BearMap3D() {
           map.fitBounds([[minX, minY], [maxX, maxY]], { padding: 50, duration: 900 });
         }
       } catch (err) {
-        console.log("[GBIF] bears layer failed:", err?.message || err);
+        console.log("[GBIF] failed:", err?.message || err);
       }
     });
 
@@ -121,44 +155,17 @@ export default function BearMap3D() {
   }, []);
 
   return (
-    <div style={{ width: "100%" }}>
-      {/* Title bar (matches your screenshot vibe) */}
-      <div
-        style={{
-          textAlign: "center",
-          padding: "14px 10px",
-          fontWeight: 800,
-          letterSpacing: "0.06em",
-          color: "white",
-          background: "rgba(0,0,0,0.85)",
-          borderTopLeftRadius: 12,
-          borderTopRightRadius: 12,
-          border: "1px solid rgba(255,255,255,0.12)",
-          borderBottom: "none",
-        }}
-      >
-        Bear Habitat 3D Terrain
-      </div>
-
-      <div
-        ref={containerRef}
-        style={{
-          width: "100%",
-          height: "70vh",
-          minHeight: 520,
-          borderBottomLeftRadius: 12,
-          borderBottomRightRadius: 12,
-          overflow: "hidden",
-          border: "1px solid rgba(255,255,255,0.12)",
-          boxShadow: "0 18px 55px rgba(0,0,0,0.45)",
-        }}
-      />
-
-      {!ready && (
-        <div style={{ color: "rgba(255,255,255,0.7)", marginTop: 10, fontSize: 13 }}>
-          Loading map…
-        </div>
-      )}
-    </div>
+    <div
+      ref={containerRef}
+      style={{
+        width: "100%",
+        height: "70vh",
+        minHeight: 520,
+        borderRadius: 12,
+        overflow: "hidden",
+        border: "1px solid rgba(255,255,255,0.12)",
+        boxShadow: "0 18px 55px rgba(0,0,0,0.45)",
+      }}
+    />
   );
 }
