@@ -4,23 +4,9 @@ import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
-// Optional states outline (wireframe)
+const BASE_STYLE_URL = "https://demotiles.maplibre.org/style.json";
 const STATES_GEOJSON_URL =
   "https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/us-states.json";
-
-// No-key "satellite-ish" demo tiles (good enough for now)
-const SATELLITE_STYLE = {
-  version: 8,
-  sources: {
-    "sat-tiles": {
-      type: "raster",
-      tiles: ["https://demotiles.maplibre.org/tiles/tiles/{z}/{x}/{y}.png"],
-      tileSize: 256,
-      attribution: "MapLibre demo tiles",
-    },
-  },
-  layers: [{ id: "satellite", type: "raster", source: "sat-tiles" }],
-};
 
 export default function BearMap3D({
   showStates = true,
@@ -36,7 +22,7 @@ export default function BearMap3D({
 
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: SATELLITE_STYLE,
+      style: BASE_STYLE_URL,
       center: [-96, 39],
       zoom: 3,
       pitch: 55,
@@ -54,7 +40,9 @@ export default function BearMap3D({
     });
 
     map.on("load", async () => {
-      // ===== States wireframe (optional) =====
+      // =========================================
+      // STATES (wire outlines)
+      // =========================================
       if (showStates) {
         try {
           map.addSource("us-states", { type: "geojson", data: STATES_GEOJSON_URL });
@@ -70,11 +58,13 @@ export default function BearMap3D({
             },
           });
         } catch (err) {
-          console.log("[States] Failed:", err);
+          console.log("[States] Failed to add:", err);
         }
       }
 
-      // ===== Habitat overlay (optional) =====
+      // =========================================
+      // HABITAT (your local GeoJSON in /public)
+      // =========================================
       if (showHabitat) {
         try {
           map.addSource("habitat", { type: "geojson", data: "/habitat.geojson" });
@@ -93,41 +83,39 @@ export default function BearMap3D({
             paint: { "line-color": "#7dd3fc", "line-width": 1.5, "line-opacity": 0.9 },
           });
         } catch (err) {
-          console.log("[Habitat] Failed:", err);
+          console.log("[Habitat] Failed to add:", err);
         }
       }
 
-      // ===== GBIF bears with clustering =====
+      // =========================================
+      // GBIF BEARS (cluster hotspots + species points)
+      // =========================================
       if (showBears) {
         try {
           map.addSource("gbif-bears", {
             type: "geojson",
             data: "/data/gbif/bear_observations.geojson",
-
-            // 🔥 clustering
             cluster: true,
-            clusterMaxZoom: 7, // clusters until this zoom
-            clusterRadius: 50, // bigger = more "hotspot" grouping
+            clusterMaxZoom: 7,
+            clusterRadius: 55,
           });
 
-          // --- HOTSPOT clusters (zoomed out) ---
+          // --- Hotspot clusters ---
           map.addLayer({
             id: "bear-clusters",
             type: "circle",
             source: "gbif-bears",
             filter: ["has", "point_count"],
             paint: {
-              // size grows with count
               "circle-radius": [
                 "step",
                 ["get", "point_count"],
-                14,   // <= first step
+                14,
                 25, 18,
                 60, 24,
                 150, 32,
-                400, 42
+                400, 42,
               ],
-              // color grows with count
               "circle-color": [
                 "step",
                 ["get", "point_count"],
@@ -135,7 +123,7 @@ export default function BearMap3D({
                 25, "#fb8500",
                 60, "#ff3b3b",
                 150, "#d00000",
-                400, "#8d0000"
+                400, "#8d0000",
               ],
               "circle-opacity": 0.75,
               "circle-stroke-color": "rgba(255,255,255,0.85)",
@@ -152,18 +140,16 @@ export default function BearMap3D({
             layout: {
               "text-field": ["get", "point_count_abbreviated"],
               "text-size": 12,
-              "text-font": ["Open Sans Bold"],
               "text-allow-overlap": true,
             },
             paint: {
               "text-color": "#111111",
-              "text-halo-color": "rgba(255,255,255,0.9)",
+              "text-halo-color": "rgba(255,255,255,0.92)",
               "text-halo-width": 1,
             },
           });
 
-          // --- Individual bears (only when zoomed in) ---
-          // Color by species/scientificName
+          // --- Individual bears (zoom in) ---
           map.addLayer({
             id: "bear-points",
             type: "circle",
@@ -177,7 +163,7 @@ export default function BearMap3D({
                 ["zoom"],
                 6.5, 3,
                 8, 5,
-                10, 7
+                10, 7,
               ],
               "circle-color": [
                 "match",
@@ -185,7 +171,7 @@ export default function BearMap3D({
                 "Ursus americanus", "#00e5ff", // black bear
                 "Ursus arctos", "#ff3b3b",     // brown bear
                 "Ursus maritimus", "#ffffff",  // polar bear
-                "#a78bfa" // fallback
+                "#a78bfa",                     // fallback
               ],
               "circle-opacity": 0.9,
               "circle-stroke-color": "rgba(0,0,0,0.35)",
@@ -193,8 +179,13 @@ export default function BearMap3D({
             },
           });
 
-          // Click a cluster to zoom into it
-          map.on("click", "bear-clusters", async (e) => {
+          // Bring hotspots above everything
+          map.moveLayer("bear-clusters");
+          map.moveLayer("bear-cluster-count");
+          map.moveLayer("bear-points");
+
+          // Click hotspot to zoom in
+          map.on("click", "bear-clusters", (e) => {
             const features = map.queryRenderedFeatures(e.point, { layers: ["bear-clusters"] });
             const clusterId = features?.[0]?.properties?.cluster_id;
             if (clusterId == null) return;
@@ -217,8 +208,12 @@ export default function BearMap3D({
             map.getCanvas().style.cursor = "";
           });
 
-          // Popup for individual bears (zoomed in)
-          const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 10 });
+          // Popup for individual bears (desktop hover)
+          const popup = new maplibregl.Popup({
+            closeButton: false,
+            closeOnClick: false,
+            offset: 10,
+          });
 
           map.on("mouseenter", "bear-points", (e) => {
             map.getCanvas().style.cursor = "pointer";
@@ -248,9 +243,9 @@ export default function BearMap3D({
             popup.remove();
           });
 
-          // Start near a bear-dense region so you immediately see hotspots
+          // Start where hotspots are easy to see
           map.flyTo({
-            center: [-84, 45], // Great Lakes / Upper Midwest
+            center: [-84, 45],
             zoom: 4.3,
             pitch: 55,
             bearing: -12,
@@ -263,7 +258,9 @@ export default function BearMap3D({
     });
 
     return () => {
-      try { map.remove(); } catch {}
+      try {
+        map.remove();
+      } catch {}
       mapRef.current = null;
     };
   }, [showStates, showHabitat, showBears]);
