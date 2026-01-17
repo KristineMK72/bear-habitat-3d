@@ -1,0 +1,21 @@
+﻿{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Yellowstone Core Bear Habitat" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-110.9, 44.35],
+            [-110.4, 44.35],
+            [-110.4, 44.6],
+            [-110.9, 44.6],
+            [-110.9, 44.35]
+          ]
+        ]
+      }
+    }
+  ]
+}
