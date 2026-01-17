@@ -1,259 +1,114 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
-const BASE_STYLE_URL = "https://demotiles.maplibre.org/style.json";
-const STATES_GEOJSON_URL =
-  "https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/us-states.json";
-
-export default function BearMap3D({
-  showStates = true,
-  showHabitat = true,
-  showBears = true,
-}) {
+export default function BearMap3D() {
   const mapRef = useRef(null);
   const containerRef = useRef(null);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     if (!containerRef.current) return;
     if (mapRef.current) return;
 
+    // Keep the same overall "look" as your original: angled, dramatic, big terrain view.
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: BASE_STYLE_URL,
-      center: [-96, 39],
-      zoom: 3,
+      style: "https://demotiles.maplibre.org/style.json",
+      center: [-104, 42], // nice western-US angle similar to your screenshot
+      zoom: 3.2,
       pitch: 55,
-      bearing: -12,
+      bearing: -18,
       antialias: true,
     });
 
     mapRef.current = map;
-
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
 
+    // Log errors (useful, but won't break the UI)
     map.on("error", (e) => {
-      const msg = e?.error?.message || e?.error || e;
-      if (msg) console.log("[MapLibre error]", msg);
+      const msg = e?.error?.message || e?.error;
+      if (msg) console.log("[MapLibre]", msg);
     });
 
     map.on("load", async () => {
-      // =========================================
-      // STATES (wire outlines)
-      // =========================================
-      if (showStates) {
-        try {
-          map.addSource("us-states", { type: "geojson", data: STATES_GEOJSON_URL });
+      setReady(true);
 
-          map.addLayer({
-            id: "states-outline",
-            type: "line",
-            source: "us-states",
-            paint: {
-              "line-color": "#ffffff",
-              "line-width": 1.2,
-              "line-opacity": 0.55,
-            },
-          });
-        } catch (err) {
-          console.log("[States] Failed to add:", err);
-        }
+      // ===== Habitat overlay (optional; uses /public/habitat.geojson if present) =====
+      try {
+        map.addSource("habitat", {
+          type: "geojson",
+          data: "/habitat.geojson",
+        });
+
+        map.addLayer({
+          id: "habitat-fill",
+          type: "fill",
+          source: "habitat",
+          paint: {
+            "fill-color": "#22c55e",
+            "fill-opacity": 0.12,
+          },
+        });
+
+        map.addLayer({
+          id: "habitat-outline",
+          type: "line",
+          source: "habitat",
+          paint: {
+            "line-color": "#86efac",
+            "line-width": 1.5,
+            "line-opacity": 0.9,
+          },
+        });
+      } catch (err) {
+        // If habitat.geojson doesn't exist, that's fine.
+        console.log("[Habitat] skipped:", err?.message || err);
       }
 
-      // =========================================
-      // HABITAT (your local GeoJSON in /public)
-      // =========================================
-      if (showHabitat) {
-        try {
-          map.addSource("habitat", { type: "geojson", data: "/habitat.geojson" });
+      // ===== GBIF bears =====
+      try {
+        map.addSource("gbif-bears", {
+          type: "geojson",
+          data: "/data/gbif/bear_observations.geojson",
+        });
 
-          map.addLayer({
-            id: "habitat-fill",
-            type: "fill",
-            source: "habitat",
-            paint: { "fill-color": "#2dd4bf", "fill-opacity": 0.14 },
-          });
+        // SUPER visible circles so you know it's working
+        map.addLayer({
+          id: "gbif-bears-circles",
+          type: "circle",
+          source: "gbif-bears",
+          paint: {
+            "circle-radius": ["interpolate", ["linear"], ["zoom"], 2, 2, 5, 4, 8, 7],
+            "circle-color": "#ff3b3b",
+            "circle-opacity": 0.85,
+            "circle-stroke-color": "#ffffff",
+            "circle-stroke-width": 1,
+          },
+        });
 
-          map.addLayer({
-            id: "habitat-outline",
-            type: "line",
-            source: "habitat",
-            paint: { "line-color": "#7dd3fc", "line-width": 1.5, "line-opacity": 0.9 },
-          });
-        } catch (err) {
-          console.log("[Habitat] Failed to add:", err);
+        // Auto zoom to bears so you can’t miss them
+        const gj = await fetch("/data/gbif/bear_observations.geojson").then((r) => r.json());
+        const coords = (gj.features || [])
+          .map((f) => f?.geometry?.coordinates)
+          .filter((c) => Array.isArray(c) && c.length === 2);
+
+        console.log("[GBIF] points:", coords.length);
+
+        if (coords.length) {
+          let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+          for (const [lon, lat] of coords) {
+            if (lon < minX) minX = lon;
+            if (lat < minY) minY = lat;
+            if (lon > maxX) maxX = lon;
+            if (lat > maxY) maxY = lat;
+          }
+          map.fitBounds([[minX, minY], [maxX, maxY]], { padding: 50, duration: 900 });
         }
-      }
-
-      // =========================================
-      // GBIF BEARS (cluster hotspots + species points)
-      // =========================================
-      if (showBears) {
-        try {
-          map.addSource("gbif-bears", {
-            type: "geojson",
-            data: "/data/gbif/bear_observations.geojson",
-            cluster: true,
-            clusterMaxZoom: 7,
-            clusterRadius: 55,
-          });
-
-          // --- Hotspot clusters ---
-          map.addLayer({
-            id: "bear-clusters",
-            type: "circle",
-            source: "gbif-bears",
-            filter: ["has", "point_count"],
-            paint: {
-              "circle-radius": [
-                "step",
-                ["get", "point_count"],
-                14,
-                25, 18,
-                60, 24,
-                150, 32,
-                400, 42,
-              ],
-              "circle-color": [
-                "step",
-                ["get", "point_count"],
-                "#ffb703",
-                25, "#fb8500",
-                60, "#ff3b3b",
-                150, "#d00000",
-                400, "#8d0000",
-              ],
-              "circle-opacity": 0.75,
-              "circle-stroke-color": "rgba(255,255,255,0.85)",
-              "circle-stroke-width": 1.5,
-            },
-          });
-
-          // --- Cluster count labels ---
-          map.addLayer({
-            id: "bear-cluster-count",
-            type: "symbol",
-            source: "gbif-bears",
-            filter: ["has", "point_count"],
-            layout: {
-              "text-field": ["get", "point_count_abbreviated"],
-              "text-size": 12,
-              "text-allow-overlap": true,
-            },
-            paint: {
-              "text-color": "#111111",
-              "text-halo-color": "rgba(255,255,255,0.92)",
-              "text-halo-width": 1,
-            },
-          });
-
-          // --- Individual bears (zoom in) ---
-          map.addLayer({
-            id: "bear-points",
-            type: "circle",
-            source: "gbif-bears",
-            filter: ["!", ["has", "point_count"]],
-            minzoom: 6.5,
-            paint: {
-              "circle-radius": [
-                "interpolate",
-                ["linear"],
-                ["zoom"],
-                6.5, 3,
-                8, 5,
-                10, 7,
-              ],
-              "circle-color": [
-                "match",
-                ["get", "scientificName"],
-                "Ursus americanus", "#00e5ff", // black bear
-                "Ursus arctos", "#ff3b3b",     // brown bear
-                "Ursus maritimus", "#ffffff",  // polar bear
-                "#a78bfa",                     // fallback
-              ],
-              "circle-opacity": 0.9,
-              "circle-stroke-color": "rgba(0,0,0,0.35)",
-              "circle-stroke-width": 1,
-            },
-          });
-
-          // Bring hotspots above everything
-          map.moveLayer("bear-clusters");
-          map.moveLayer("bear-cluster-count");
-          map.moveLayer("bear-points");
-
-          // Click hotspot to zoom in
-          map.on("click", "bear-clusters", (e) => {
-            const features = map.queryRenderedFeatures(e.point, { layers: ["bear-clusters"] });
-            const clusterId = features?.[0]?.properties?.cluster_id;
-            if (clusterId == null) return;
-
-            const source = map.getSource("gbif-bears");
-            source.getClusterExpansionZoom(clusterId, (err, zoom) => {
-              if (err) return;
-              map.easeTo({
-                center: features[0].geometry.coordinates,
-                zoom: Math.min(zoom + 0.5, 11),
-                duration: 650,
-              });
-            });
-          });
-
-          map.on("mouseenter", "bear-clusters", () => {
-            map.getCanvas().style.cursor = "pointer";
-          });
-          map.on("mouseleave", "bear-clusters", () => {
-            map.getCanvas().style.cursor = "";
-          });
-
-          // Popup for individual bears (desktop hover)
-          const popup = new maplibregl.Popup({
-            closeButton: false,
-            closeOnClick: false,
-            offset: 10,
-          });
-
-          map.on("mouseenter", "bear-points", (e) => {
-            map.getCanvas().style.cursor = "pointer";
-            const f = e.features?.[0];
-            const p = f?.properties || {};
-            const coords = f?.geometry?.coordinates;
-            if (!coords) return;
-
-            const label =
-              p.vernacularName || p.species || p.scientificName || "Bear observation";
-            const when = p.year ? ` (${p.year})` : "";
-            const where = [p.stateProvince, p.county].filter(Boolean).join(", ");
-
-            popup
-              .setLngLat(coords)
-              .setHTML(
-                `<div style="font: 12px/1.35 system-ui; color:#111;">
-                  <b>${label}</b>${when}<br/>
-                  <span style="opacity:.75">${where}</span>
-                </div>`
-              )
-              .addTo(map);
-          });
-
-          map.on("mouseleave", "bear-points", () => {
-            map.getCanvas().style.cursor = "";
-            popup.remove();
-          });
-
-          // Start where hotspots are easy to see
-          map.flyTo({
-            center: [-84, 45],
-            zoom: 4.3,
-            pitch: 55,
-            bearing: -12,
-            essential: true,
-          });
-        } catch (err) {
-          console.log("[GBIF] Failed to add clustered bears:", err);
-        }
+      } catch (err) {
+        console.log("[GBIF] bears layer failed:", err?.message || err);
       }
     });
 
@@ -263,21 +118,47 @@ export default function BearMap3D({
       } catch {}
       mapRef.current = null;
     };
-  }, [showStates, showHabitat, showBears]);
+  }, []);
 
   return (
-    <div
-      ref={containerRef}
-      style={{
-        width: "100%",
-        height: "70vh",
-        minHeight: 520,
-        borderRadius: 18,
-        overflow: "hidden",
-        border: "1px solid rgba(255,255,255,0.12)",
-        boxShadow: "0 18px 55px rgba(0,0,0,0.45)",
-        background: "rgba(0,0,0,0.25)",
-      }}
-    />
+    <div style={{ width: "100%" }}>
+      {/* Title bar (matches your screenshot vibe) */}
+      <div
+        style={{
+          textAlign: "center",
+          padding: "14px 10px",
+          fontWeight: 800,
+          letterSpacing: "0.06em",
+          color: "white",
+          background: "rgba(0,0,0,0.85)",
+          borderTopLeftRadius: 12,
+          borderTopRightRadius: 12,
+          border: "1px solid rgba(255,255,255,0.12)",
+          borderBottom: "none",
+        }}
+      >
+        Bear Habitat 3D Terrain
+      </div>
+
+      <div
+        ref={containerRef}
+        style={{
+          width: "100%",
+          height: "70vh",
+          minHeight: 520,
+          borderBottomLeftRadius: 12,
+          borderBottomRightRadius: 12,
+          overflow: "hidden",
+          border: "1px solid rgba(255,255,255,0.12)",
+          boxShadow: "0 18px 55px rgba(0,0,0,0.45)",
+        }}
+      />
+
+      {!ready && (
+        <div style={{ color: "rgba(255,255,255,0.7)", marginTop: 10, fontSize: 13 }}>
+          Loading map…
+        </div>
+      )}
+    </div>
   );
 }
