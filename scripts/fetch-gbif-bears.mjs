@@ -15,7 +15,7 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 
-const OUT_DIR = path.join("data", "gbif");
+const OUT_DIR = path.join("public", "data", "gbif");
 const CSV_PATH = path.join(OUT_DIR, "bear_observations.csv");
 const GEOJSON_PATH = path.join(OUT_DIR, "bear_observations.geojson");
 
