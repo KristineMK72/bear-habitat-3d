@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import type { Bear } from "@/data/bears";
 
-function Pill({ children }: { children: React.ReactNode }) {
+function Pill({ children }) {
   return (
     <span
       style={{
@@ -22,7 +21,7 @@ function Pill({ children }: { children: React.ReactNode }) {
   );
 }
 
-function InfoRow({ label, value }: { label: string; value?: string }) {
+function InfoRow({ label, value }) {
   if (!value) return null;
   return (
     <div style={{ marginBottom: 8, opacity: 0.95, lineHeight: 1.5 }}>
@@ -31,7 +30,7 @@ function InfoRow({ label, value }: { label: string; value?: string }) {
   );
 }
 
-export default function BearPage({ bear }: { bear: Bear }) {
+export default function BearPage({ bear }) {
   return (
     <main style={{ padding: "28px 16px" }}>
       <section style={{ maxWidth: 1050, margin: "0 auto" }}>
@@ -85,7 +84,6 @@ export default function BearPage({ bear }: { bear: Bear }) {
               <span style={{ opacity: 0.85 }}>
                 {bear.regions.map((r) => r.label).join(" • ")}
               </span>
-              {/* When we wire the map, these will become clickable flyTo buttons */}
             </div>
           ) : null}
         </div>
@@ -135,11 +133,11 @@ export default function BearPage({ bear }: { bear: Bear }) {
             }}
           >
             <h2 style={{ margin: "0 0 10px" }}>Size & life history</h2>
-            <InfoRow label="Shoulder height" value={bear.size.heightShoulder} />
-            <InfoRow label="Upright" value={bear.size.standingUpright} />
-            <InfoRow label="Male weight" value={bear.size.weightMale} />
-            <InfoRow label="Female weight" value={bear.size.weightFemale} />
-            <InfoRow label="Lifespan (wild)" value={bear.size.lifespanWild} />
+            <InfoRow label="Shoulder height" value={bear.size?.heightShoulder} />
+            <InfoRow label="Upright" value={bear.size?.standingUpright} />
+            <InfoRow label="Male weight" value={bear.size?.weightMale} />
+            <InfoRow label="Female weight" value={bear.size?.weightFemale} />
+            <InfoRow label="Lifespan (wild)" value={bear.size?.lifespanWild} />
           </article>
 
           <article
@@ -152,10 +150,10 @@ export default function BearPage({ bear }: { bear: Bear }) {
           >
             <h2 style={{ margin: "0 0 10px" }}>Conservation</h2>
             <div style={{ marginBottom: 8, opacity: 0.95 }}>
-              <strong>Status:</strong> {bear.conservation.status}
+              <strong>Status:</strong> {bear.conservation?.status}
             </div>
             <ul style={{ margin: 0, paddingLeft: 18, opacity: 0.95 }}>
-              {bear.conservation.notes.map((n) => (
+              {(bear.conservation?.notes || []).map((n) => (
                 <li key={n} style={{ marginBottom: 8, lineHeight: 1.5 }}>
                   {n}
                 </li>
@@ -173,7 +171,7 @@ export default function BearPage({ bear }: { bear: Bear }) {
           >
             <h2 style={{ margin: "0 0 10px" }}>Fun facts</h2>
             <ul style={{ margin: 0, paddingLeft: 18, opacity: 0.95 }}>
-              {bear.funFacts.map((f) => (
+              {(bear.funFacts || []).map((f) => (
                 <li key={f} style={{ marginBottom: 8, lineHeight: 1.5 }}>
                   {f}
                 </li>
