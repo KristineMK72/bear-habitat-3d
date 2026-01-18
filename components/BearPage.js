@@ -192,7 +192,7 @@ export default function BearPage({ bear }) {
         >
           <h2 style={{ margin: "0 0 10px" }}>Map</h2>
           <p style={{ margin: 0, opacity: 0.9, lineHeight: 1.55 }}>
-            Next: we’ll embed your MapLibre basemap here and auto-zoom using{" "}
+            Next: zoomed in regions of bear {" "}
             <code>bear.view</code> and clickable region chips using{" "}
             <code>bear.regions</code>.
           </p>
