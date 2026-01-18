@@ -19,7 +19,7 @@ export const metadata = {
   description: "A living 3D habitat powered by real wildlife observations.",
 };
 
-export default function RootLayout({ children }) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${cinzel.variable} ${inter.variable}`}>
       <body>
