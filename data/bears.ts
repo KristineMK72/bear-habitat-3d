@@ -3,19 +3,43 @@ export type Bear = {
   slug: "black-bear" | "grizzly-bear" | "polar-bear" | "kodiak-bear";
   name: string;
   scientific: string;
+
   heroSubtitle: string;
   shortBlurb: string;
+
   where: string[];
+  coreRangeSummary: string;
+
   habitat: string[];
   diet: string[];
-  funFacts: string[];
+
+  size: {
+    heightShoulder?: string;
+    standingUpright?: string;
+    weightMale?: string;
+    weightFemale?: string;
+    lifespanWild?: string;
+  };
+
   conservation: {
     status: string;
     notes: string[];
   };
-  // Optional future hooks:
-  rangeGeoJSON?: string; // e.g. "/data/ranges/black_bear.geojson"
-  sightingsGeoJSON?: string; // e.g. "/data/gbif/bear_observations.geojson"
+
+  funFacts: string[];
+
+  // Map camera defaults + optional region chips
+  view: {
+    center: [number, number]; // [lng, lat]
+    zoom: number;
+    pitch?: number;
+    bearing?: number;
+  };
+  regions?: { id: string; label: string; center: [number, number]; zoom: number }[];
+
+  // Future hooks if you want to wire data layers per bear
+  rangeGeoJSON?: string;
+  sightingsGeoJSON?: string;
 };
 
 export const BEARS: Bear[] = [
@@ -25,93 +49,150 @@ export const BEARS: Bear[] = [
     scientific: "Ursus americanus",
     heroSubtitle: "The most widespread bear in North America.",
     shortBlurb:
-      "Highly adaptable and found in forests, swamps, and mountains across much of the U.S.",
-    where: ["Alaska", "Minnesota", "Wisconsin", "Michigan", "Pennsylvania", "North Carolina", "Florida", "California"],
-    habitat: ["Forests", "Swamps", "Mountains", "Mixed woodland edges"],
-    diet: ["Berries & nuts", "Insects", "Carrion", "Plants", "Occasional fish/meat"],
-    funFacts: [
-      "Color can vary from black to cinnamon to brown depending on region.",
-      "Excellent climbers—especially younger bears.",
-      "A true generalist: survives near people more often than other bears.",
+      "Highly adaptable omnivore found in forests and wild edges across much of the U.S. and Canada.",
+    where: [
+      "Alaska",
+      "Pacific Northwest",
+      "Rockies",
+      "Upper Midwest",
+      "Appalachians",
+      "Southeast (including Florida)",
+      "Northeast",
     ],
+    coreRangeSummary:
+      "Widely distributed across North America; commonly associated with forested habitats but often uses mixed landscapes near human communities.",
+    habitat: ["Forests", "Swamps", "Mountains", "Mixed woodland edges"],
+    diet: [
+      "Omnivore: plants + animals",
+      "Berries, fruit, sedges, insects",
+      "Occasional fish/honeycomb",
+      "Can be attracted to unsecured human food/garbage",
+    ],
+    size: {
+      lifespanWild: "Can live into the 20s; NPS notes broad omnivory and adaptability (varies by region).",
+    },
     conservation: {
-      status: "Least Concern (varies by region)",
+      status: "Least Concern (IUCN); managed by states/provinces",
       notes: [
-        "Main risks are habitat fragmentation and human–bear conflict.",
-        "Secure trash = fewer conflicts (and fewer bears euthanized).",
+        "Human–bear conflict is often driven by food attractants—secure trash is a major prevention step.",
+        "Diet is extremely flexible; they will eat “almost anything.”",
       ],
     },
-    // rangeGeoJSON: "/data/ranges/black_bear.geojson",
-    // sightingsGeoJSON: "/data/gbif/bear_observations.geojson",
+    funFacts: [
+      "Curved claws help with tree climbing (better climbers than brown bears).",
+      "Excellent sense of smell; very food-motivated and smart around attractants.",
+    ],
+    view: { center: [-98, 39], zoom: 3.7, pitch: 45, bearing: 0 },
+    regions: [
+      { id: "upper-midwest", label: "Upper Midwest", center: [-93, 46], zoom: 5.2 },
+      { id: "appalachians", label: "Appalachians", center: [-82.5, 36.5], zoom: 5.7 },
+      { id: "pacific-nw", label: "Pacific NW", center: [-122.5, 47.5], zoom: 5.4 },
+    ],
   },
+
   {
     slug: "grizzly-bear",
-    name: "Grizzly Bear (Brown Bear – Lower 48)",
+    name: "Grizzly Bear (Lower 48)",
     scientific: "Ursus arctos horribilis",
     heroSubtitle: "A heavyweight icon of the Northern Rockies.",
     shortBlurb:
-      "In the contiguous U.S., grizzlies persist mainly in the Northern Rockies and Greater Yellowstone ecosystems.",
+      "In the contiguous U.S., grizzlies persist mainly in the Greater Yellowstone and Northern Continental Divide ecosystems, with recovery efforts focused on connectivity and conflict reduction.",
     where: ["Montana", "Wyoming", "Idaho"],
+    coreRangeSummary:
+      "Concentrated in a few key ecosystems in the Northern Rockies; management focuses on population recovery, dispersal/connectivity, and reducing human-caused mortality.",
     habitat: ["Mountain valleys", "Alpine meadows", "River corridors", "Forested slopes"],
-    diet: ["Roots & bulbs", "Berries", "Insects", "Ungulates (sometimes)", "Fish (where available)"],
-    funFacts: [
-      "The shoulder hump is muscle used for digging.",
-      "Can cover surprising distances in a day when foraging.",
-      "Often at the center of conservation and land-use debates.",
+    diet: [
+      "Highly variable/opportunistic omnivore",
+      "Plants, roots, berries, insects",
+      "Mammals/fish/carrion when available",
+      "Can be attracted to human food/garbage",
     ],
+    size: {
+      lifespanWild: "Often 15–30 years (varies by ecosystem).",
+    },
     conservation: {
-      status: "Protected in many areas (management varies)",
+      status: "Protected/managed under U.S. frameworks; status varies by population/ecosystem",
       notes: [
-        "Key challenges: connectivity between populations + conflict reduction.",
-        "Road density and attractants often drive risk hotspots.",
+        "Dispersal can be substantial; males may travel long distances between ecosystems.",
+        "Diet varies widely by season, year, and location.",
       ],
     },
+    funFacts: [
+      "Shoulder hump is muscle used for digging.",
+      "Can run fast for short bursts; behavior and diet shift seasonally.",
+    ],
+    view: { center: [-110.5, 45.5], zoom: 5.2, pitch: 50, bearing: -10 },
+    regions: [
+      { id: "yellowstone", label: "Greater Yellowstone", center: [-110.6, 44.6], zoom: 6.2 },
+      { id: "ncde", label: "Northern Continental Divide", center: [-113.7, 48.7], zoom: 5.8 },
+    ],
   },
+
   {
     slug: "polar-bear",
     name: "Polar Bear",
     scientific: "Ursus maritimus",
     heroSubtitle: "Sea-ice specialist of the Arctic coast.",
     shortBlurb:
-      "In the U.S., polar bears are primarily found along Alaska’s northern coast and sea-ice habitats.",
+      "In the U.S., polar bears occur in Alaska and are largely dependent on sea ice for hunting; sea-ice decline is a central threat.",
     where: ["Alaska (Arctic coast)"],
+    coreRangeSummary:
+      "Circumpolar Arctic species; U.S. range is Alaska, with life history closely tied to sea ice.",
     habitat: ["Sea ice", "Coastal tundra", "Barrier islands"],
-    diet: ["Seals (primary)", "Carrion (opportunistic)"],
-    funFacts: [
-      "Built for swimming: large paws act like paddles.",
-      "Relies heavily on sea ice for hunting.",
-      "A powerful case study in climate-linked habitat change.",
-    ],
+    diet: ["Primarily seals", "Carrion/opportunistic foods when available"],
+    size: {
+      lifespanWild: "Varies; strongly influenced by sea-ice conditions and food availability.",
+    },
     conservation: {
-      status: "Threatened (U.S.) / Vulnerable globally (commonly cited)",
+      status: "Threatened (U.S. ESA); Vulnerable (IUCN Red List)",
       notes: [
-        "Sea-ice loss is the biggest long-term driver of population stress.",
-        "Human safety planning is critical in Arctic communities.",
+        "Largely dependent on sea ice; reduced ice can limit hunting opportunities.",
+        "U.S. agencies manage conservation with an emphasis on habitat change and coexistence planning.",
       ],
     },
+    funFacts: [
+      "Built for swimming; large paws help as paddles.",
+      "Often travels with the seasonal ice edge.",
+    ],
+    view: { center: [-156, 71], zoom: 4.7, pitch: 50, bearing: 10 },
+    regions: [
+      { id: "north-slope", label: "North Slope", center: [-150.2, 70.3], zoom: 6.0 },
+      { id: "chukchi", label: "Chukchi Sea", center: [-164, 70.8], zoom: 5.6 },
+    ],
   },
+
   {
     slug: "kodiak-bear",
     name: "Kodiak Bear",
     scientific: "Ursus arctos middendorffi",
-    heroSubtitle: "Island giant found only on Kodiak Archipelago.",
+    heroSubtitle: "Island giant found only on the Kodiak Archipelago.",
     shortBlurb:
-      "One of the largest bears on Earth, shaped by island ecology and rich coastal food systems.",
+      "A distinct brown bear population limited to Alaska’s Kodiak Archipelago; size and ecology are strongly shaped by coastal food systems.",
     where: ["Alaska (Kodiak Archipelago)"],
+    coreRangeSummary:
+      "Endemic to the Kodiak Archipelago; often cited among the largest bears, supported by rich seasonal foods like salmon.",
     habitat: ["Coastal forests", "River systems", "Alpine terrain", "Meadows"],
     diet: ["Salmon", "Berries", "Plants", "Carrion", "Occasional ungulates"],
-    funFacts: [
-      "Often cited as among the world’s largest bears (with polar bears).",
-      "Island isolation creates a distinct population.",
-      "Salmon runs can dramatically influence body size and density.",
-    ],
+    size: {
+      standingUpright: "Up to ~10 feet tall when upright (large males)",
+      heightShoulder: "~3–5 feet on all fours",
+      weightMale: "Up to ~1,500 lb (very large males)",
+      weightFemale: "Females smaller/lighter than males",
+      lifespanWild: "Individuals documented into the 20s–30s (records vary).",
+    },
     conservation: {
-      status: "Stable (management varies)",
+      status: "Managed population (Alaska); local management focuses on sustainability and safety",
       notes: [
-        "Sustainable management focuses on habitat, hunting regulation, and conflict prevention.",
-        "Great candidate for a ‘food web’ mini visual on the page.",
+        "Island isolation makes this population distinct.",
+        "ADF&G notes extreme size potential in large males.",
       ],
     },
+    funFacts: [
+      "Often described as one of the largest bears; size is heavily influenced by food availability.",
+      "ADF&G has documented wild individuals into their 30s.",
+    ],
+    view: { center: [-153.5, 57.4], zoom: 6.6, pitch: 55, bearing: -15 },
+    regions: [{ id: "kodiak-island", label: "Kodiak Island", center: [-153.4, 57.6], zoom: 7.3 }],
   },
 ];
 
