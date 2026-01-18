@@ -1,13 +1,9 @@
-// /components/BearCard.tsx
+// /components/BearCard.js
 import Link from "next/link";
-import type { Bear } from "@/data/bears";
 
-export default function BearCard({ bear }: { bear: Bear }) {
+export default function BearCard({ bear }) {
   return (
-    <Link
-      href={`/bears/${bear.slug}`}
-      style={{ textDecoration: "none", color: "inherit" }}
-    >
+    <Link href={`/bears/${bear.slug}`} style={{ textDecoration: "none", color: "inherit" }}>
       <article
         className="card"
         style={{
@@ -21,7 +17,9 @@ export default function BearCard({ bear }: { bear: Bear }) {
         <div style={{ fontSize: 12, letterSpacing: 1, opacity: 0.8 }}>
           {bear.scientific}
         </div>
+
         <h3 style={{ margin: "6px 0 8px", fontSize: 22 }}>{bear.name}</h3>
+
         <p style={{ margin: 0, opacity: 0.9, lineHeight: 1.45 }}>
           {bear.shortBlurb}
         </p>
