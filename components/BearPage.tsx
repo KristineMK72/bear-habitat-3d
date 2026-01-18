@@ -1,4 +1,6 @@
-// /components/BearPage.tsx
+"use client";
+
+import Link from "next/link";
 import type { Bear } from "@/data/bears";
 
 function Pill({ children }: { children: React.ReactNode }) {
@@ -20,10 +22,25 @@ function Pill({ children }: { children: React.ReactNode }) {
   );
 }
 
+function InfoRow({ label, value }: { label: string; value?: string }) {
+  if (!value) return null;
+  return (
+    <div style={{ marginBottom: 8, opacity: 0.95, lineHeight: 1.5 }}>
+      <strong>{label}:</strong> {value}
+    </div>
+  );
+}
+
 export default function BearPage({ bear }: { bear: Bear }) {
   return (
     <main style={{ padding: "28px 16px" }}>
       <section style={{ maxWidth: 1050, margin: "0 auto" }}>
+        <Link href="/bears" style={{ textDecoration: "none", opacity: 0.9 }}>
+          ← All bears
+        </Link>
+
+        <div style={{ height: 10 }} />
+
         <div className="kicker" style={{ opacity: 0.85 }}>
           Bear Species
         </div>
@@ -45,10 +62,16 @@ export default function BearPage({ bear }: { bear: Bear }) {
             {bear.shortBlurb}
           </p>
 
+          <div style={{ height: 10 }} />
+
+          <p style={{ margin: 0, lineHeight: 1.6, opacity: 0.9 }}>
+            {bear.coreRangeSummary}
+          </p>
+
           <div style={{ height: 14 }} />
 
           <div>
-            <strong>Where you’ll find them:</strong>
+            <strong>Where:</strong>
             <div style={{ marginTop: 8 }}>
               {bear.where.map((w) => (
                 <Pill key={w}>{w}</Pill>
@@ -56,27 +79,15 @@ export default function BearPage({ bear }: { bear: Bear }) {
             </div>
           </div>
 
-          <div style={{ height: 12 }} />
-
-          <div>
-            <strong>Habitats:</strong>
-            <div style={{ marginTop: 8 }}>
-              {bear.habitat.map((h) => (
-                <Pill key={h}>{h}</Pill>
-              ))}
+          {bear.regions?.length ? (
+            <div style={{ marginTop: 10 }}>
+              <strong>Zoom to:</strong>{" "}
+              <span style={{ opacity: 0.85 }}>
+                {bear.regions.map((r) => r.label).join(" • ")}
+              </span>
+              {/* When we wire the map, these will become clickable flyTo buttons */}
             </div>
-          </div>
-
-          <div style={{ height: 12 }} />
-
-          <div>
-            <strong>Diet:</strong>
-            <div style={{ marginTop: 8 }}>
-              {bear.diet.map((d) => (
-                <Pill key={d}>{d}</Pill>
-              ))}
-            </div>
-          </div>
+          ) : null}
         </div>
 
         <div style={{ height: 16 }} />
@@ -96,14 +107,39 @@ export default function BearPage({ bear }: { bear: Bear }) {
               padding: 18,
             }}
           >
-            <h2 style={{ margin: "0 0 10px" }}>Fun facts</h2>
+            <h2 style={{ margin: "0 0 10px" }}>Habitat</h2>
+            <div>
+              {bear.habitat.map((h) => (
+                <Pill key={h}>{h}</Pill>
+              ))}
+            </div>
+
+            <div style={{ height: 10 }} />
+
+            <h2 style={{ margin: "10px 0 10px" }}>Diet</h2>
             <ul style={{ margin: 0, paddingLeft: 18, opacity: 0.95 }}>
-              {bear.funFacts.map((f) => (
-                <li key={f} style={{ marginBottom: 8, lineHeight: 1.5 }}>
-                  {f}
+              {bear.diet.map((d) => (
+                <li key={d} style={{ marginBottom: 8, lineHeight: 1.5 }}>
+                  {d}
                 </li>
               ))}
             </ul>
+          </article>
+
+          <article
+            style={{
+              borderRadius: 24,
+              border: "1px solid rgba(255,255,255,0.14)",
+              background: "rgba(255,255,255,0.06)",
+              padding: 18,
+            }}
+          >
+            <h2 style={{ margin: "0 0 10px" }}>Size & life history</h2>
+            <InfoRow label="Shoulder height" value={bear.size.heightShoulder} />
+            <InfoRow label="Upright" value={bear.size.standingUpright} />
+            <InfoRow label="Male weight" value={bear.size.weightMale} />
+            <InfoRow label="Female weight" value={bear.size.weightFemale} />
+            <InfoRow label="Lifespan (wild)" value={bear.size.lifespanWild} />
           </article>
 
           <article
@@ -126,12 +162,28 @@ export default function BearPage({ bear }: { bear: Bear }) {
               ))}
             </ul>
           </article>
+
+          <article
+            style={{
+              borderRadius: 24,
+              border: "1px solid rgba(255,255,255,0.14)",
+              background: "rgba(255,255,255,0.06)",
+              padding: 18,
+            }}
+          >
+            <h2 style={{ margin: "0 0 10px" }}>Fun facts</h2>
+            <ul style={{ margin: 0, paddingLeft: 18, opacity: 0.95 }}>
+              {bear.funFacts.map((f) => (
+                <li key={f} style={{ marginBottom: 8, lineHeight: 1.5 }}>
+                  {f}
+                </li>
+              ))}
+            </ul>
+          </article>
         </section>
 
-        <div style={{ height: 18 }} />
+        <div style={{ height: 16 }} />
 
-        {/* Next step: drop your BearMap3D here as a section */}
-        {/* Example placeholder */}
         <section
           style={{
             borderRadius: 24,
@@ -142,8 +194,9 @@ export default function BearPage({ bear }: { bear: Bear }) {
         >
           <h2 style={{ margin: "0 0 10px" }}>Map</h2>
           <p style={{ margin: 0, opacity: 0.9, lineHeight: 1.55 }}>
-            Next: embed your 3D map here, then swap datasets based on the bear’s
-            slug (range GeoJSON + sightings).
+            Next: we’ll embed your MapLibre basemap here and auto-zoom using{" "}
+            <code>bear.view</code> and clickable region chips using{" "}
+            <code>bear.regions</code>.
           </p>
         </section>
       </section>
