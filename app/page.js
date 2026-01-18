@@ -8,11 +8,17 @@ export default function HomePage() {
   const [showStateWires, setShowStateWires] = useState(false);
   const [showHabitat, setShowHabitat] = useState(true);
 
+  // NEW
+  const [showInterstates, setShowInterstates] = useState(true);
+  const [showRailroads, setShowRailroads] = useState(false);
+  const [showUsRoutes, setShowUsRoutes] = useState(false);
+
   const badges = useMemo(
     () => [
       { text: "GBIF sightings" },
       { text: "USA-only" },
       { text: "7360 points" },
+      { text: "Infrastructure: USGS TNM" },
     ],
     []
   );
@@ -26,7 +32,7 @@ export default function HomePage() {
             A Living Bear Habitat · clustered hotspots → species points as you zoom
           </div>
 
-          <div className="row" style={{ marginTop: 10 }}>
+          <div className="row" style={{ marginTop: 10, flexWrap: "wrap" }}>
             <ToggleChip checked={showBears} onClick={() => setShowBears((v) => !v)} label="Bears" />
             <ToggleChip
               checked={showStateWires}
@@ -38,10 +44,27 @@ export default function HomePage() {
               onClick={() => setShowHabitat((v) => !v)}
               label="Habitat overlay"
             />
+
+            {/* NEW infra toggles */}
+            <ToggleChip
+              checked={showInterstates}
+              onClick={() => setShowInterstates((v) => !v)}
+              label="Interstates"
+            />
+            <ToggleChip
+              checked={showUsRoutes}
+              onClick={() => setShowUsRoutes((v) => !v)}
+              label="US routes"
+            />
+            <ToggleChip
+              checked={showRailroads}
+              onClick={() => setShowRailroads((v) => !v)}
+              label="Railroads"
+            />
           </div>
         </div>
 
-        <div className="row">
+        <div className="row" style={{ flexWrap: "wrap" }}>
           {badges.map((b, i) => (
             <span key={i} className="badge">
               {b.text}
@@ -51,7 +74,15 @@ export default function HomePage() {
       </div>
 
       <div className="card" style={{ padding: 12 }}>
-        <BearMap3D showBears={showBears} showHabitat={showHabitat} showStateWires={showStateWires} />
+        <BearMap3D
+          showBears={showBears}
+          showHabitat={showHabitat}
+          showStateWires={showStateWires}
+          // NEW
+          showInterstates={showInterstates}
+          showUsRoutes={showUsRoutes}
+          showRailroads={showRailroads}
+        />
       </div>
 
       <div className="card" style={{ marginTop: 16, padding: 16 }}>
@@ -61,6 +92,8 @@ export default function HomePage() {
           <br />
           <b>Species colors</b>: black bear, brown/grizzly, and polar bear are colored differently.
           Zoom in to see more individual points.
+          <br />
+          <b>Infrastructure</b>: interstates/rail can act as barriers and fragmentation drivers.
           <br />
           <b>Tip</b>: click any point to view details (date, place, GBIF ID).
         </div>
