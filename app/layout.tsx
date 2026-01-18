@@ -1,4 +1,5 @@
 import "./globals.css";
+import SiteHeader from "@/components/SiteHeader";
 import { Cinzel, Inter } from "next/font/google";
 
 const cinzel = Cinzel({
@@ -18,10 +19,13 @@ export const metadata = {
   description: "A living 3D habitat powered by real wildlife observations.",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${cinzel.variable} ${inter.variable}`}>
-      <body>{children}</body>
+      <body>
+        <SiteHeader />
+        {children}
+      </body>
     </html>
   );
 }
