@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import BearMapPanel from "@/components/BearMapPanel";
 
 function Pill({ children }) {
   return (
@@ -49,6 +50,49 @@ export default function BearPage({ bear }) {
           <em>{bear.scientific}</em> — {bear.heroSubtitle}
         </div>
 
+        {/* NEW: hero image */}
+        {bear?.image?.src ? (
+          <div
+            style={{
+              margin: "14px 0",
+              borderRadius: 24,
+              overflow: "hidden",
+              border: "1px solid rgba(255,255,255,0.14)",
+              background: "rgba(255,255,255,0.06)",
+            }}
+          >
+            <img
+              src={bear.image.src}
+              alt={bear.name}
+              style={{
+                width: "100%",
+                height: 360,
+                objectFit: "cover",
+                display: "block",
+              }}
+              loading="lazy"
+            />
+            <div style={{ padding: "10px 14px", fontSize: 12, opacity: 0.8 }}>
+              Photo:{" "}
+              {bear.image.page ? (
+                <a
+                  href={bear.image.page}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ color: "inherit" }}
+                >
+                  {bear.image.credit || "Wikimedia Commons"}
+                </a>
+              ) : (
+                <span>{bear.image.credit || "Wikimedia Commons"}</span>
+              )}
+              {bear.image.licenseHint ? (
+                <span style={{ opacity: 0.75 }}> · {bear.image.licenseHint}</span>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+
         <div
           style={{
             borderRadius: 24,
@@ -72,13 +116,13 @@ export default function BearPage({ bear }) {
           <div>
             <strong>Where:</strong>
             <div style={{ marginTop: 8 }}>
-              {bear.where.map((w) => (
+              {(bear.where || []).map((w) => (
                 <Pill key={w}>{w}</Pill>
               ))}
             </div>
           </div>
 
-          {bear.regions?.length ? (
+          {bear?.regions?.length ? (
             <div style={{ marginTop: 10 }}>
               <strong>Zoom to:</strong>{" "}
               <span style={{ opacity: 0.85 }}>
@@ -107,7 +151,7 @@ export default function BearPage({ bear }) {
           >
             <h2 style={{ margin: "0 0 10px" }}>Habitat</h2>
             <div>
-              {bear.habitat.map((h) => (
+              {(bear.habitat || []).map((h) => (
                 <Pill key={h}>{h}</Pill>
               ))}
             </div>
@@ -116,7 +160,7 @@ export default function BearPage({ bear }) {
 
             <h2 style={{ margin: "10px 0 10px" }}>Diet</h2>
             <ul style={{ margin: 0, paddingLeft: 18, opacity: 0.95 }}>
-              {bear.diet.map((d) => (
+              {(bear.diet || []).map((d) => (
                 <li key={d} style={{ marginBottom: 8, lineHeight: 1.5 }}>
                   {d}
                 </li>
@@ -133,11 +177,11 @@ export default function BearPage({ bear }) {
             }}
           >
             <h2 style={{ margin: "0 0 10px" }}>Size & life history</h2>
-            <InfoRow label="Shoulder height" value={bear.size?.heightShoulder} />
-            <InfoRow label="Upright" value={bear.size?.standingUpright} />
-            <InfoRow label="Male weight" value={bear.size?.weightMale} />
-            <InfoRow label="Female weight" value={bear.size?.weightFemale} />
-            <InfoRow label="Lifespan (wild)" value={bear.size?.lifespanWild} />
+            <InfoRow label="Shoulder height" value={bear?.size?.heightShoulder} />
+            <InfoRow label="Upright" value={bear?.size?.standingUpright} />
+            <InfoRow label="Male weight" value={bear?.size?.weightMale} />
+            <InfoRow label="Female weight" value={bear?.size?.weightFemale} />
+            <InfoRow label="Lifespan (wild)" value={bear?.size?.lifespanWild} />
           </article>
 
           <article
@@ -150,10 +194,10 @@ export default function BearPage({ bear }) {
           >
             <h2 style={{ margin: "0 0 10px" }}>Conservation</h2>
             <div style={{ marginBottom: 8, opacity: 0.95 }}>
-              <strong>Status:</strong> {bear.conservation?.status}
+              <strong>Status:</strong> {bear?.conservation?.status}
             </div>
             <ul style={{ margin: 0, paddingLeft: 18, opacity: 0.95 }}>
-              {(bear.conservation?.notes || []).map((n) => (
+              {(bear?.conservation?.notes || []).map((n) => (
                 <li key={n} style={{ marginBottom: 8, lineHeight: 1.5 }}>
                   {n}
                 </li>
@@ -182,6 +226,7 @@ export default function BearPage({ bear }) {
 
         <div style={{ height: 16 }} />
 
+        {/* NEW: embed the map panel */}
         <section
           style={{
             borderRadius: 24,
@@ -191,11 +236,7 @@ export default function BearPage({ bear }) {
           }}
         >
           <h2 style={{ margin: "0 0 10px" }}>Map</h2>
-          <p style={{ margin: 0, opacity: 0.9, lineHeight: 1.55 }}>
-            Next: zoomed in regions of bear {" "}
-            <code>bear.view</code> and clickable region chips using{" "}
-            <code>bear.regions</code>.
-          </p>
+          <BearMapPanel bear={bear} />
         </section>
       </section>
     </main>
