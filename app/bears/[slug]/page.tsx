@@ -6,8 +6,11 @@ export function generateStaticParams() {
   return BEARS.map((b) => ({ slug: b.slug }));
 }
 
-export default async function BearDetailPage({ params }) {
-  // Next 16.1: params can be a Promise
+export default async function BearDetailPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
   const { slug } = await params;
 
   const bear = getBearBySlug(slug);
