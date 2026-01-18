@@ -28,6 +28,14 @@ export type Bear = {
 
   funFacts: string[];
 
+  // NEW: optional photo shown on bear detail pages
+  image?: {
+    src: string; // direct image URL
+    credit?: string; // short credit line
+    page?: string; // source/credit page
+    licenseHint?: string; // optional “check page for license”
+  };
+
   // Map camera defaults + optional region chips
   view: {
     center: [number, number]; // [lng, lat]
@@ -69,7 +77,8 @@ export const BEARS: Bear[] = [
       "Can be attracted to unsecured human food/garbage",
     ],
     size: {
-      lifespanWild: "Can live into the 20s; NPS notes broad omnivory and adaptability (varies by region).",
+      lifespanWild:
+        "Can live into the 20s; NPS notes broad omnivory and adaptability (varies by region).",
     },
     conservation: {
       status: "Least Concern (IUCN); managed by states/provinces",
@@ -82,6 +91,15 @@ export const BEARS: Bear[] = [
       "Curved claws help with tree climbing (better climbers than brown bears).",
       "Excellent sense of smell; very food-motivated and smart around attractants.",
     ],
+
+    // NEW image
+    image: {
+      src: "https://commons.wikimedia.org/wiki/Special:FilePath/American%20Black%20Bear%20059.jpg",
+      credit: "Wikimedia Commons — American Black Bear 059",
+      page: "https://commons.wikimedia.org/wiki/File:American_Black_Bear_059.jpg",
+      licenseHint: "See file page for license",
+    },
+
     view: { center: [-98, 39], zoom: 3.7, pitch: 45, bearing: 0 },
     regions: [
       { id: "upper-midwest", label: "Upper Midwest", center: [-93, 46], zoom: 5.2 },
@@ -121,6 +139,15 @@ export const BEARS: Bear[] = [
       "Shoulder hump is muscle used for digging.",
       "Can run fast for short bursts; behavior and diet shift seasonally.",
     ],
+
+    // NEW image
+    image: {
+      src: "https://commons.wikimedia.org/wiki/Special:FilePath/Grizzlybear55.jpg",
+      credit: "Wikimedia Commons — Grizzlybear55",
+      page: "https://commons.wikimedia.org/wiki/File:Grizzlybear55.jpg",
+      licenseHint: "See file page for license",
+    },
+
     view: { center: [-110.5, 45.5], zoom: 5.2, pitch: 50, bearing: -10 },
     regions: [
       { id: "yellowstone", label: "Greater Yellowstone", center: [-110.6, 44.6], zoom: 6.2 },
@@ -150,10 +177,16 @@ export const BEARS: Bear[] = [
         "U.S. agencies manage conservation with an emphasis on habitat change and coexistence planning.",
       ],
     },
-    funFacts: [
-      "Built for swimming; large paws help as paddles.",
-      "Often travels with the seasonal ice edge.",
-    ],
+    funFacts: ["Built for swimming; large paws help as paddles.", "Often travels with the seasonal ice edge."],
+
+    // NEW image
+    image: {
+      src: "https://commons.wikimedia.org/wiki/Special:FilePath/Polar%20bear%20after%20unlucky%20hunt%20for%20a%20seal.jpg",
+      credit: "Wikimedia Commons — Polar bear after unlucky hunt for a seal",
+      page: "https://commons.wikimedia.org/wiki/File:Polar_bear_after_unlucky_hunt_for_a_seal.jpg",
+      licenseHint: "See file page for license",
+    },
+
     view: { center: [-156, 71], zoom: 4.7, pitch: 50, bearing: 10 },
     regions: [
       { id: "north-slope", label: "North Slope", center: [-150.2, 70.3], zoom: 6.0 },
@@ -191,6 +224,15 @@ export const BEARS: Bear[] = [
       "Often described as one of the largest bears; size is heavily influenced by food availability.",
       "ADF&G has documented wild individuals into their 30s.",
     ],
+
+    // NEW image
+    image: {
+      src: "https://commons.wikimedia.org/wiki/Special:FilePath/Kodiak%20Bear%20standing%20on%20hind%20legs%2C%20USFWS%2011394.jpg",
+      credit: "USFWS via Wikimedia Commons — Kodiak Bear (USFWS 11394)",
+      page: "https://commons.wikimedia.org/wiki/File:Kodiak_Bear_standing_on_hind_legs,_USFWS_11394.jpg",
+      licenseHint: "See file page for license",
+    },
+
     view: { center: [-153.5, 57.4], zoom: 6.6, pitch: 55, bearing: -15 },
     regions: [{ id: "kodiak-island", label: "Kodiak Island", center: [-153.4, 57.6], zoom: 7.3 }],
   },
